@@ -10,7 +10,9 @@ Update the config.ini (copy from master) with your sickchill host, api, sabnzbd 
 
 The show name/show id you obtain from sickchill.
 
-Run with: `python scdownloader.py'  when the config.ini is in with the program files.
+Run with: 
+```python scdownloader.py```
+when the config.ini is in with the program files.
 
 
 # Credits
