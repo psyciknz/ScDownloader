@@ -1,5 +1,6 @@
 """
 This will connect the Sickchill platform to Homeassistant, showing stats and switches from Sickchill.
+Original based on https://github.com/custom-components/sickchill by @Swetoast
 """
 import logging
 import time

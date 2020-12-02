@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) 2013 Gustavo Hoirisch <gugahoi@gmail.com>
+# Credit: https://github.com/gugahoi/newznab_python_wrapper
 #import urllib2
 import urllib
 import requests
