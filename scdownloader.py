@@ -105,12 +105,13 @@ if __name__ == '__main__':
 				ep_date = episode['airdate']
 				showname = episode['show_name']
 				
+				#Debug entries for testing.
 				#Formula1.2020.Bahrain.Grand.Prix.Qualifying.720p50.HDTV.DD2.0.x264-wAm
-				season = 2020
-				full_ep_name = "Great Britain (Qualifying)"
-				ep_name = "Great Britain"
-				ep_number = 77
-				ep_type = "Qualifying"
+				#season = 2020
+				#full_ep_name = "Great Britain (Qualifying)"
+				#ep_name = "Great Britain"
+				#ep_number = 77
+				#ep_type = "Qualifying"
 				
 				#look for translation
 				try:
