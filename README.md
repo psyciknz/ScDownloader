@@ -10,6 +10,21 @@ Update the config.ini (copy from master) with your sickchill host, api, sabnzbd 
 
 The show name/show id you obtain from sickchill.
 
+Added rudementary translation between what Sickchill (thetvbd) and the NZB releases.  This appears in a Section with the show name as the section header.
+
+```[Shows]
+show=Example|123456
+
+[Example]
+Sickchillname=NZb Name
+```
+
+eg
+```Italy=Italian```
+This will allow for any releses with Italy or Italian as a name.
+
+
+
 Run with: 
 ```python scdownloader.py```
 when the config.ini is in with the program files.

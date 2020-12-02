@@ -22,7 +22,7 @@ from newznab import wrapper
 from sabnzbd import sabnzbd
 from sickchill import sickchill
 
-__version__ = "0.1"
+__version__ = "0.2"
 COMPONENT_NAME = "Sickchill"
 COMPONENT_AUTHOR = "psyciknz"
 
@@ -64,8 +64,14 @@ if __name__ == '__main__':
 		config["sab_host"] = cp.get("SabNZBd","host")
 		config["sab_category"] = cp.get("SabNZBd","category")
 
-		config["sports_show"] = cp.get("Shows","show")
-		config["sports_show_id"] = cp.get("Shows","show_id",fallback=None)
+		show  = cp.get("Shows","show").split("|")
+		
+		config["sports_show_name"] = show[0]
+		if len(show) >1:
+			config["sports_show_id"] = int(show[1] )#cp.get("Shows","show_id",fallback=None)
+		show_cp = cp.items(show[0])
+		config[show[0]] = cp._sections[show[0]]
+
 	except Exception as ex:
 		_LOGGER.error("Error starting:" + str(ex))
 		sys.exit(0)
@@ -80,11 +86,11 @@ if __name__ == '__main__':
 		_LOGGER.debug("Already have a show ID, no need to go find it.")
 		showid = config['sports_show_id']
 	else:
-		show = sc.get_shows(findshowname=config["sports_show"])
+		show = sc.get_shows(findshowname=config["sports_show_name"])
 		showid = show['indexerid']
 
 	#season = sc.get_show(showid,'2020')
-	episodelist = sc.get_upcoming(showid,'missed|today')
+	episodelist = sc.get_upcoming(showid,'missed|today|soon')
 	if episodelist is not None and len(episodelist) > 0:
 		for episode in episodelist:
 			result = [element for element in EPISODETYPES if element in episode['ep_name']]
@@ -100,18 +106,29 @@ if __name__ == '__main__':
 				showname = episode['show_name']
 				
 				#Formula1.2020.Bahrain.Grand.Prix.Qualifying.720p50.HDTV.DD2.0.x264-wAm
-				#season = 2020
-				#full_ep_name = "Bahrain (Qualifying)"
-				#ep_name = "Bahrain"
-				#ep_number = 77
-				#ep_type = "Qualifying"
+				season = 2020
+				full_ep_name = "Great Britain (Qualifying)"
+				ep_name = "Great Britain"
+				ep_number = 77
+				ep_type = "Qualifying"
 				
-				_LOGGER.debug("Creating regex for matching NZB Results: %s" % '%s.%s.%s.+%s.+(?P<quality>(720|1080)).+' %(showname.replace(" ",".?"),season,ep_name,ep_type) )
-				pattern = re.compile('%s.%s.%s.+%s.+(?P<quality>(720|1080)).+' %(showname.replace(" ",".?"),season,ep_name,ep_type))
+				#look for translation
+				try:
+					translate = str(config[showname][ep_name.lower()] )
+				except:
+					_LOGGER.debug('No translate entry for "%s" Found' % ep_name)
+					translate = ep_name.lower()
+
+
+				nzbregex = '%s.%s.(%s|%s).+%s.+(?P<quality>(720|1080)).+' %(showname,season,ep_name,translate,ep_type)
+				_LOGGER.debug("Creating regex for matching NZB Results: %s" % nzbregex.replace(" ",".?"))
+				pattern = re.compile(nzbregex.replace(" ",".?"))
 				
 				#perform NZBGeek Search
-				_LOGGER.debug('Performing NZB Search for "%s"' % '%s.%s %s %s' % (showname.replace(" ",""),season,ep_name,ep_type))
-				results = wrapper.search(q="%s.%s %s %s" % (showname.replace(" ",""),season,ep_name,ep_type),maxage=10)
+				nzbsearch = '%s.%s %s' % (showname.replace(" ",""),season,ep_type)
+				_LOGGER.debug('Performing NZB Search for "%s"' % nzbsearch)
+				results = newznzb.search(q=nzbsearch,maxage=10)
+				#(q=str(nzbsearch),maxage=10)
 				_LOGGER.debug("Return from NZB Search")
 				
 				#highest link and title to download.
@@ -124,6 +141,7 @@ if __name__ == '__main__':
 						title = result['title']
 						match = re.match(pattern,title)
 						link = result['link']
+						_LOGGER.debug('Checking entry "%s" against the episode regex' % title)
 					#match = re.match(pattern,'Formula1.2020.Sakhir.Grand.Prix.Practice.1.720p50.HDTV.DD2.0.x264-wAm')
 					#match = re.match(pattern,'Formula1.2020.Sakhir.Grand.Prix.Practice.2.720p50.HDTV.DD2.0.x264-wAm')
 						
@@ -137,7 +155,7 @@ if __name__ == '__main__':
 								resulttitle = title
 					#send to SAB
 					#do i need to rename it as sickchill expects? YES
-					if resultlink is not None:
+					if resultlink is not None and resultlink != '':
 						_LOGGER.debug("Entry to download: entry: %s Quality: %s: link: %s", title, quality,link)
 						nzbname = "%s.S%sE%s.%s.%s" %(showname.replace(' ','.'),season,ep_number,full_ep_name,lastquality)
 						_LOGGER.debug("Adding link to sabnzbd with nzb name of %s" % nzbname)
@@ -146,8 +164,8 @@ if __name__ == '__main__':
 						_LOGGER.info("Nothing found to download")
 				#if 'item' in results['channel'] and len(results['channel']['item']) > 0:
 				else:
-					_LOGGER.info("No Upcoming episodes")
+					_LOGGER.info("No NZB Results found")
 	else: #if episodelist is not None and len(episodelist) > 0:
-		_LOGGER.info("No upcoming episodes for %s" % config["sports_show"])
+		_LOGGER.info("No upcoming episodes for %s" % config["sports_show_name"])
 
 	_LOGGER.debug("fin")
