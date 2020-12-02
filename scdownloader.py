@@ -1,3 +1,4 @@
+#!/usr/bin/env python3 
 """
 This will connect the Sickchill platform to Homeassistant, showing stats and switches from Sickchill.
 """
