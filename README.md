@@ -17,5 +17,5 @@ when the config.ini is in with the program files.
 
 # Credits
 
-Uses an NewNZB Wrapper credit to : https://github.com/gugahoi/newznab_python_wrapper
-Sickchill code is based on : https://github.com/custom-components/sickchill
+* Uses an NewNZB Wrapper credit to : https://github.com/gugahoi/newznab_python_wrapper @gugahoi
+* Sickchill code is based on : https://github.com/custom-components/sickchill 
