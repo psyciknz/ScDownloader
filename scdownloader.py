@@ -22,16 +22,21 @@ from newznab import wrapper
 from sabnzbd import sabnzbd
 from sickchill import sickchill
 
-__version__ = "0.2"
+__version__ = "0.3"
 COMPONENT_NAME = "Sickchill"
 COMPONENT_AUTHOR = "psyciknz"
 
 TIMEOUT = 10
 INTERVAL = timedelta(minutes=10)
 ATTRIBUTES = ['shows_total', 'shows_active', 'ep_downloaded', 'ep_total', 'ep_snatched']
-EPISODETYPES = ['race','qualifying','Practice 2']
+#episode types moved to config.ini
+#EPISODETYPES = ['race','qualifying','Practice 2']
 
-EPISODENAMEREGEX = r"(^.+).\("
+#specifc epsiode name regex for Formula one entires in SC (via thetvdb)
+#eg an episode name of "Sakhir (Practice 2)"
+# splits to two groups, the ep_name - ie place and the type - which is checked against the
+# episodetypes config list.
+EPISODENAMEREGEX = r"(^.+).\((.+)\)"
 
 _LOGGER = logging.getLogger(__name__)
 _LOGGER.setLevel(logging.DEBUG)
@@ -58,6 +63,7 @@ if __name__ == '__main__':
 
 		config["sc_host"] = cp.get("Sickchill","host")
 		config["sc_api_key"] = cp.get("Sickchill","api_key")
+		config['sc_upcoming'] = cp.get("Sickchill","upcoming",fallback="missed|today|soon")
 		config["newznzb_host"] = cp.get("NewzNZB","host")
 		config["newznzb_api"] = cp.get("NewzNZB","api_key")
 		config["sab_api_key"] = cp.get("SabNZBd","api_key")
@@ -70,6 +76,7 @@ if __name__ == '__main__':
 		if len(show) >1:
 			config["sports_show_id"] = int(show[1] )#cp.get("Shows","show_id",fallback=None)
 		show_cp = cp.items(show[0])
+		config["episodetypes"] = cp.get(show[0],'episodetypes',fallback='').split("|")
 		config[show[0]] = cp._sections[show[0]]
 
 	except Exception as ex:
@@ -89,17 +96,24 @@ if __name__ == '__main__':
 		show = sc.get_shows(findshowname=config["sports_show_name"])
 		showid = show['indexerid']
 
+	#hold newznzbresults here so we don't have to make multiple api calls
+	newznzbresults = []
+
 	#season = sc.get_show(showid,'2020')
-	episodelist = sc.get_upcoming(showid,'missed|today|soon')
+	episodelist = sc.get_upcoming(showid,config['sc_upcoming'])
 	if episodelist is not None and len(episodelist) > 0:
 		for episode in episodelist:
-			result = [element for element in EPISODETYPES if element in episode['ep_name']]
+			#result = [element for element in EPISODETYPES if element in episode['ep_name']]
+			result = [element for element in config["episodetypes"] if element.lower() in episode['ep_name'].lower()]
 			if len(result) > 0 :
-				_LOGGER.debug("Found an episode type: " + result[0])
+				showname = episode['show_name']
+				full_ep_name = episode['ep_name'] # Sakhir (Practice 2)
+				_LOGGER.debug("Found an episode type %s for %s",full_ep_name,showname)
 				full_ep_name = episode['ep_name'] # Sakhir (Practice 2)
 				match =  re.match(EPISODENAMEREGEX,full_ep_name)
 				ep_name = match[1]
-				ep_type = result[0].replace(' ','.') # Practice 2
+				ep_type = match[2].replace(' ','.') # Practice 2
+				#ep_type = result[0].replace(' ','.') # Practice 2
 				season = episode['season']
 				ep_number = episode['episode']
 				ep_date = episode['airdate']
@@ -126,9 +140,13 @@ if __name__ == '__main__':
 				pattern = re.compile(nzbregex.replace(" ",".?"))
 				
 				#perform NZBGeek Search
-				nzbsearch = '%s.%s %s' % (showname.replace(" ",""),season,ep_type)
-				_LOGGER.debug('Performing NZB Search for "%s"' % nzbsearch)
-				results = newznzb.search(q=nzbsearch,maxage=10)
+				nzbsearch = '%s.%s' % (showname.replace(" ",""),season)
+				
+				if newznzbresults is None or len(newznzbresults) ==0 :
+					_LOGGER.debug('Performing NZB Search for "%s"' % nzbsearch)
+					newznzbresults = newznzb.search(q=nzbsearch,maxage=10)
+				else:
+					_LOGGER.debug('Already performed an NZB Search for "%s"' % nzbsearch)
 				#(q=str(nzbsearch),maxage=10)
 				_LOGGER.debug("Return from NZB Search")
 				
@@ -136,9 +154,9 @@ if __name__ == '__main__':
 				resultlink = ''
 				resulttitle = ''
 				lastquality = 0
-				if 'item' in results['channel'] and len(results['channel']['item']) > 0:
-					_LOGGER.debug("Results have been found: %s" % len(results['channel']['item']))
-					for result in results['channel']['item']:
+				if 'item' in newznzbresults['channel'] and len(newznzbresults['channel']['item']) > 0:
+					_LOGGER.debug("Results have been found: %s" % len(newznzbresults['channel']['item']))
+					for result in newznzbresults['channel']['item']:
 						title = result['title']
 						match = re.match(pattern,title)
 						link = result['link']
@@ -154,6 +172,8 @@ if __name__ == '__main__':
 								lastquality = quality
 								resultlink = html.unescape(link)
 								resulttitle = title
+					#for result in newznzbresults['channel']['item']:
+
 					#send to SAB
 					#do i need to rename it as sickchill expects? YES
 					if resultlink is not None and resultlink != '':

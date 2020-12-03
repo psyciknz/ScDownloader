@@ -27,7 +27,6 @@ COMPONENT_AUTHOR = "psyciknz"
 TIMEOUT = 10
 INTERVAL = timedelta(minutes=10)
 ATTRIBUTES = ['shows_total', 'shows_active', 'ep_downloaded', 'ep_total', 'ep_snatched']
-EPISODETYPES = ['race','qualifying','Practice 2']
 
 EPISODENAMEREGEX = r"(^.+).\("
 
@@ -50,6 +49,7 @@ class sickchill:
 		"""Set up the component."""
 		_LOGGER.info('Starting sickchill')
 		_LOGGER.warning(' %s (%s) is starting, report any issues to %s', COMPONENT_NAME,__version__, COMPONENT_AUTHOR)
+		self.config = config
 		self.host = config["sc_host"]
 		self.api = config["sc_api_key"]
 
@@ -115,6 +115,7 @@ class sickchill:
 	def get_upcoming(self,showid,states):
 		"""Update sensor values"""
 		cmd = 'future&type=%s' % states
+		_LOGGER.debug("Performing Upcoming search for " + states)
 		result = generic_command(self.host, self.api, cmd)
 		episodes = []
 		for section in result['data']: #soon
@@ -124,9 +125,9 @@ class sickchill:
 			for counter in range(len(result['data'][section])):
 				episode = result['data'][section][counter]
 				for field in episode:
-					_LOGGER.debug('Value for section %s field %s=%s', section,field,result['data'][section][counter][field])
+					#_LOGGER.debug('Value for section %s field %s=%s', section,field,result['data'][section][counter][field])
 					if field=='tvdbid' and showid==result['data'][section][counter]['tvdbid']:
-						_LOGGER.debug("Found upcoming episode of show")
+						_LOGGER.debug("Found upcoming episode of show with id: %s:%s" % (showid,result['data'][section][counter]))
 						episodes.append(result['data'][section][counter])						
 
 		return episodes	
