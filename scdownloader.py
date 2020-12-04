@@ -54,7 +54,7 @@ _LOGGER.addHandler(ch)
 if __name__ == '__main__':
 	cp = ConfigParser(allow_no_value=True)
 	_LOGGER.info("Loading config")
-	if len(sys.argv) > 1 is not None:
+	if len(sys.argv) > 1:
 		filename = sys.argv[1]
 	else:
 		filename = {"config.ini","conf/config.ini"}
