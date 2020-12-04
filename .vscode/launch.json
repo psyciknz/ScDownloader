@@ -10,6 +10,15 @@
             "request": "launch",
             "program": "${workspaceFolder}/scdownloader.py",
             "console": "integratedTerminal"
+        },
+        {
+            "name": "Python: With INI",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/scdownloader.py",
+            "args": ["${workspaceFolder}/config.ini"],
+            "console": "integratedTerminal"
         }
     ]
+
 }

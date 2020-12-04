@@ -54,7 +54,10 @@ _LOGGER.addHandler(ch)
 if __name__ == '__main__':
 	cp = ConfigParser(allow_no_value=True)
 	_LOGGER.info("Loading config")
-	filename = {"config.ini","conf/config.ini"}
+	if len(sys.argv) > 1 is not None:
+		filename = sys.argv[1]
+	else:
+		filename = {"config.ini","conf/config.ini"}
 	dataset = cp.read(filename)
 	config = {}
 	try:
