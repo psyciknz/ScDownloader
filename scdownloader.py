@@ -22,7 +22,7 @@ from newznab import wrapper
 from sabnzbd import sabnzbd
 from sickchill import sickchill
 
-__version__ = "0.3"
+__version__ = "0.3.1"
 COMPONENT_NAME = "Sickchill"
 COMPONENT_AUTHOR = "psyciknz"
 
