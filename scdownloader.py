@@ -22,7 +22,7 @@ from newznab import wrapper
 from sabnzbd import sabnzbd
 from sickchill import sickchill
 
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 COMPONENT_NAME = "Sickchill"
 COMPONENT_AUTHOR = "psyciknz"
 
@@ -106,6 +106,11 @@ if __name__ == '__main__':
 	episodelist = sc.get_upcoming(showid,config['sc_upcoming'])
 	if episodelist is not None and len(episodelist) > 0:
 		for episode in episodelist:
+			showname = episode['show_name']
+			full_ep_name = episode['ep_name'] # Sakhir (Practice 2)
+			season = episode['season']
+			ep_number = episode['episode']
+
 			#result = [element for element in EPISODETYPES if element in episode['ep_name']]
 			result = [element for element in config["episodetypes"] if element.lower() in episode['ep_name'].lower()]
 			if len(result) > 0 :
@@ -117,8 +122,7 @@ if __name__ == '__main__':
 				ep_name = match[1]
 				ep_type = match[2].replace(' ','.') # Practice 2
 				#ep_type = result[0].replace(' ','.') # Practice 2
-				season = episode['season']
-				ep_number = episode['episode']
+				
 				ep_date = episode['airdate']
 				showname = episode['show_name']
 				
@@ -192,6 +196,10 @@ if __name__ == '__main__':
 				#if 'item' in results['channel'] and len(results['channel']['item']) > 0:
 				else:
 					_LOGGER.info("No NZB Results found")
+			else:
+				_LOGGER.debug("Non Wanted Episode Found as upcoming, setting as skipped %s - %s" % (showname,full_ep_name))
+				sc.set_episode_status(showid,season,ep_number,"skipped")
+			#if len(result) > 0
 	else: #if episodelist is not None and len(episodelist) > 0:
 		_LOGGER.info("No upcoming episodes for %s" % config["sports_show_name"])
 

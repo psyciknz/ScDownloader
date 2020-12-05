@@ -113,7 +113,7 @@ class sickchill:
 		_LOGGER.debug('Update done...')
 
 	def get_upcoming(self,showid,states):
-		"""Update sensor values"""
+		"""Get Upcoming shows for states"""
 		cmd = 'future&type=%s' % states
 		_LOGGER.debug("Performing Upcoming search for " + states)
 		result = generic_command(self.host, self.api, cmd)
@@ -133,7 +133,15 @@ class sickchill:
 		return episodes	
 		_LOGGER.debug('Update done...')
 
+	def set_episode_status(self,showid,season,episode,state):
+		"""Set Episdoe state -episode.setstatus"""
 
+		#episode.setstatus&indexerid=387219&season=2020&episode=18&status=skipped&force=0
+		cmd = 'episode.setstatus&indexerid=%s&season=%s&episode=%s&status=%s' % (showid,season,episode,state)
+		_LOGGER.debug("Performing Set episode state S%sE%s to %s" % (season,episode,state))
+		result = generic_command(self.host, self.api, cmd)
+		
+		_LOGGER.debug('Update done...')
 
 def generic_command(host, api, command):
 	"""Place docstring here!"""
