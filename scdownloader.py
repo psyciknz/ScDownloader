@@ -69,6 +69,7 @@ if __name__ == '__main__':
 		config['sc_upcoming'] = cp.get("Sickchill","upcoming",fallback="missed|today|soon")
 		config["newznzb_host"] = cp.get("NewzNZB","host")
 		config["newznzb_api"] = cp.get("NewzNZB","api_key")
+		config["newznzb_cat"] = cp.get("NewzNZB","cat",fallback="5000")
 		config["sab_api_key"] = cp.get("SabNZBd","api_key")
 		config["sab_host"] = cp.get("SabNZBd","host")
 		config["sab_category"] = cp.get("SabNZBd","category")
@@ -154,7 +155,7 @@ if __name__ == '__main__':
 				
 				if newznzbresults is None or len(newznzbresults) ==0 :
 					_LOGGER.debug('Performing NZB Search for "%s"' % nzbsearch)
-					newznzbresults = newznzb.search(q=nzbsearch,maxage=10)
+					newznzbresults = newznzb.search(q=nzbsearch,maxage=10,cat=config["newznzb_cat"])
 				else:
 					_LOGGER.debug('Already performed an NZB Search for "%s"' % nzbsearch)
 				#(q=str(nzbsearch),maxage=10)
