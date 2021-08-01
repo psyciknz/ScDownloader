@@ -147,8 +147,11 @@ if __name__ == '__main__':
 				ep_type_extended = ep_type_extended.replace("2","(2|Two|two|TWO)")
 				ep_type_extended = ep_type_extended.replace("3","(3|Three|three|THREE)")
 				#ep_type_extended = ep_type_extended.replace("Race","(\.[rR]ace)")
-				ep_type_extended = ep_type_extended.replace("Race","((?<!\.Sprint)\.[rR]ace)")
-				ep_type_extended = ep_type_extended.replace("Sprint","(\.[sS]print.+?)")
+				if 'Sprint' in ep_type_extended:
+					ep_type_extended = ep_type_extended.replace("Sprint","(\.[sS]print.+?)")
+				else:
+					ep_type_extended = ep_type_extended.replace("Race","((?<!\.Sprint)\.[rR]ace)")
+
 				ep_type_extended = ep_type_extended.replace("Qualify","(\.[qQ]ualify)")
 				nzbregex = '%s.%s.(%s|%s).+%s.+(?P<quality>(720|1080)).+' %(showname,season,ep_name,translate,ep_type_extended)
 				_LOGGER.debug("Creating regex for matching NZB Results: %s" % nzbregex.replace(" ",".?"))
