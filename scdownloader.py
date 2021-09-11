@@ -149,10 +149,12 @@ if __name__ == '__main__':
 				#ep_type_extended = ep_type_extended.replace("Race","(\.[rR]ace)")
 				if 'Sprint' in ep_type_extended:
 					ep_type_extended = ep_type_extended.replace("Sprint","(\.[sS]print.+?)")
+					ep_type_extended = ep_type_extended.replace("Qualifying","")
 				else:
 					ep_type_extended = ep_type_extended.replace("Race","((?<!\.Sprint)\.[rR]ace)")
+					ep_type_extended = ep_type_extended.replace("Qualify","(\.[qQ]ualify)")
 
-				ep_type_extended = ep_type_extended.replace("Qualify","(\.[qQ]ualify)")
+
 				nzbregex = '%s.%s.(%s|%s).+%s.+(?P<quality>(720|1080)).+' %(showname,season,ep_name,translate,ep_type_extended)
 				_LOGGER.debug("Creating regex for matching NZB Results: %s" % nzbregex.replace(" ",".?"))
 				pattern = re.compile(nzbregex.replace(" ",".?"))
