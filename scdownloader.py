@@ -201,6 +201,9 @@ if __name__ == '__main__':
 						nzbname = "%s.S%sE%s.%s.%s" %(showname.replace(' ','.'),season,ep_number,full_ep_name,lastquality)
 						_LOGGER.debug("Adding link to sabnzbd with nzb name of %s" % nzbname)
 						sabnzbd.addnzb(resultlink,nzbname)
+						_LOGGER.debug("Setting status as snatched")
+						sc.set_episode_status(showid,season,ep_number,"snatched")
+
 					else:
 						_LOGGER.info("Nothing found to download")
 				#if 'item' in results['channel'] and len(results['channel']['item']) > 0:
