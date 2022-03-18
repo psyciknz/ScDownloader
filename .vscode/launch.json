@@ -5,18 +5,26 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: Current File",
+            "name": "SC Python: Current File",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/scdownloader.py",
             "console": "integratedTerminal"
         },
         {
-            "name": "Python: With INI",
+            "name": "SC Python: With INI",
             "type": "python",
             "request": "launch",
             "program": "${workspaceFolder}/scdownloader.py",
             "args": ["${workspaceFolder}/config.ini"],
+            "console": "integratedTerminal"
+        },
+        {
+            "name": "SON Python: With INI",
+            "type": "python",
+            "request": "launch",
+            "program": "${workspaceFolder}/sondownloader.py",
+            "args": ["${workspaceFolder}/sonconfig.ini"],
             "console": "integratedTerminal"
         }
     ]

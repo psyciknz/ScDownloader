@@ -4,6 +4,7 @@ This will connect the Sickchill platform to Homeassistant, showing stats and swi
 """
 import logging
 import time
+import html
 import re
 from datetime import timedelta
 import urllib
@@ -51,14 +52,18 @@ _LOGGER.addHandler(ch)
 def get_show_by_tvdbid(host,headers,tvdbid):
 	url = "{}/api/v3/series/".format(host)
 	print(url)
+	shows = {}
 	res = requests.get(url,headers=headers)
 	#print(res.json())
 	for item in res.json():
 		print("Found '{}' with tvbdbid of '{}'.  I want '{}'".format(item['title'],item['tvdbId'],tvdbid))
+		shows[item['id']] = item
 		if item['tvdbId'] == tvdbid:
-			return item
-		
-		
+			returnitem = item
+	#for item in res.json():
+	return shows,returnitem
+#def get_show_by_tvdbid(host,headers,tvdbid):
+
 
 if __name__ == '__main__':
 	cp = ConfigParser(allow_no_value=True)
@@ -105,19 +110,20 @@ if __name__ == '__main__':
             'X-Api-Key': config["sonarr_api_key"]
         }
 
+	#all the shows
+	shows = {}
 	#sc.get_shows()
-	if  config['sports_show_id'] is not None:
+	if  'sports_show_id' in config:
 		_LOGGER.debug("Already have a show ID, no need to go find it.")
 		showtvdbid = config['sports_show_id']
-		show = get_show_by_tvdbid(config["sonarr_host"],headers,showtvdbid)
+
+		#return all thew shows to shows, and the one we want to show.
+		shows,show = get_show_by_tvdbid(config["sonarr_host"],headers,showtvdbid)
 	else:
-		showname = "Formula 1"
-		url = "{}/api/v3/series/lookup?term=tvdb:{}".format(config["sonarr_host"], showid)
-		print(url)
-		#show = sc.get_shows(findshowname=config["sports_show_name"])
-		#showid = show['indexerid']
-		res = requests.get(url,headers=headers)
-		print(res.json())
+		_LOGGER.error("Cant run with out a show id.")
+		print ("Cant run with out a show id.")
+		sys.exit(1)
+
 	showname = show['title']
 	showid = show['id']
 	#hold newznzbresults here so we don't have to make multiple api calls
@@ -129,24 +135,26 @@ if __name__ == '__main__':
 	url = "{}/api/v3/wanted/missing?sortKey=airDateUtc".format(config["sonarr_host"])
 	print (url)
 	res = requests.get(url, headers=headers)
-	print (res.json())
+	#print (res.json())
 	episodelist = res.json()
 	if episodelist is not None and episodelist['totalRecords'] > 0:
-		print ("Has results")
+		#print ("Has results")
 		for episode in episodelist['records']:
 			if showid != episode['seriesId']:
-				print("Found upcoming episode  {} for series {}, but this is not our series".format(episode['title'],episode['seriesId']))
+				_LOGGER.debug("Found upcoming episode  \"{}\" for series \"{}\", but this is not our series".format(episode['title'],shows[episode['seriesId']]['title']))
 			else:
 				full_ep_name = episode['title'] # Sakhir (Practice 2)
 				episodeshow = episode['seriesId']
 				season = episode['seasonNumber']
 				ep_number = episode['episodeNumber']
+				epid = episode['id']
 
 				#result = [element for element in EPISODETYPES if element in episode['ep_name']]
 				result = [element for element in config["episodetypes"] if element.lower() in episode['title'].lower() ]
 				if len(result) > 0 :
 					full_ep_name = episode['title'] # Sakhir (Practice 2)
-					_LOGGER.debug("Found an episode type '%s' for '%s'",full_ep_name,showname)
+					_LOGGER.debug("")
+					_LOGGER.debug("*************   Found an episode type \"{}\" for \"{}\"".format(full_ep_name,showname))
 					match =  re.match(EPISODENAMEREGEX,full_ep_name)
 					ep_name = match[1]
 					ep_type = match[2].replace(' ','.') # Practice 2
@@ -190,12 +198,15 @@ if __name__ == '__main__':
 					nzbsearch = '%s.%s' % (showname.replace(" ",""),season)
 					
 					if newznzbresults is None or len(newznzbresults) ==0 :
+						_LOGGER.debug('')
+						_LOGGER.debug('----------------------------------------------------------')
 						_LOGGER.debug('Performing NZB Search for "%s"' % nzbsearch)
 						newznzbresults = newznzb.search(q=nzbsearch,maxage=10,cat=config["newznzb_cat"])
 					else:
 						_LOGGER.debug('Already performed an NZB Search for "%s"' % nzbsearch)
 					#(q=str(nzbsearch),maxage=10)
 					_LOGGER.debug("Return from NZB Search")
+					_LOGGER.debug("")
 					
 					#highest link and title to download.
 					resultlink = ''
@@ -207,15 +218,15 @@ if __name__ == '__main__':
 							title = result['title']
 							match = re.match(pattern,title)
 							link = result['link']
-							_LOGGER.debug('Checking entry "%s" against the episode regex' % title)
+							_LOGGER.debug('*****     Checking entry "%s" against the episode regex' % title)
 						#match = re.match(pattern,'Formula1.2020.Sakhir.Grand.Prix.Practice.1.720p50.HDTV.DD2.0.x264-wAm')
 						#match = re.match(pattern,'Formula1.2020.Sakhir.Grand.Prix.Practice.2.720p50.HDTV.DD2.0.x264-wAm')
 							
 							if match is not None:
 								quality = int(match.group('quality'))
-								_LOGGER.debug("Found rss entry: %s Quality: %s", title, quality)
+								_LOGGER.debug("---------------    Found rss entry: %s Quality: %s", title, quality)
 								if quality > lastquality:
-									_LOGGER.debug("Higher quality this one: entry: %s Quality: %s", title, quality)
+									_LOGGER.debug("++++++++++++++++      Higher quality this one: entry: %s Quality: %s", title, quality)
 									lastquality = quality
 									resultlink = html.unescape(link)
 									resulttitle = title
@@ -224,9 +235,11 @@ if __name__ == '__main__':
 						#send to SAB
 						#do i need to rename it as sickchill expects? YES
 						if resultlink is not None and resultlink != '':
+							_LOGGER.debug("")
+							_LOGGER.debug("===================================================================================")
 							_LOGGER.debug("Entry to download: entry: %s Quality: %s: link: %s", title, quality,link)
 							nzbname = "%s.S%sE%s.%s.%s" %(showname.replace(' ','.'),season,ep_number,full_ep_name,lastquality)
-							_LOGGER.debug("Adding link to sabnzbd with nzb name of %s" % nzbname)
+							_LOGGER.debug("Adding link to sabnzbd with nzb name of \"%s\"" % nzbname)
 							sabnzbd.addnzb(resultlink,nzbname)
 							_LOGGER.debug("Setting status as snatched")
 							#sc.set_episode_status(showid,season,ep_number,"snatched")
@@ -237,16 +250,16 @@ if __name__ == '__main__':
 					else:
 						_LOGGER.info("No NZB Results found")
 				else:
-					_LOGGER.debug("Non Wanted Episode Found as upcoming, setting as skipped '%s' - '%s'" % (showname,full_ep_name))                                # Get sonarr episode
-					request_uri ='http://'+self.sonarr_address+'/api/episode/'+str(sonarr_epid)+'?apikey='+self.sonarr_apikey
-					sonarr_episode_json = requests.get(request_uri).json()
-
-					if self.sonarr_unmonitor:
-						sonarr_episode_json["monitored"] = False
-
-						r = requests.put(request_uri, json=sonarr_episode_json)
-						if r.status_code != 200 and r.status_code != 202:
-							print("   Error: "+str(r.json()["message"]))
+					_LOGGER.debug("---------------------------------------------------------------------------------------------")
+					_LOGGER.debug("Non Wanted Episode Found as upcoming, setting as skipped '%s' - '%s'" % (showname,full_ep_name))  
+					url = "{}/api/v3/episode/{}".format(config["sonarr_host"],epid)
+					
+					#request_uri ='http://'+self.sonarr_address+'/api/episode/'+str(sonarr_epid)+'?apikey='+self.sonarr_apikey
+					sonarr_episode_json = requests.get(url,headers=headers).json()
+					sonarr_episode_json["monitored"] = False
+					r = requests.put(url,headers=headers,json=sonarr_episode_json)
+					if r.status_code != 200 and r.status_code != 202:
+						print("   Error: "+str(r.json()["message"]))
 					#sc.set_episode_status(showid,season,ep_number,"skipped")
 			#if showid != episode['seriesId']:
 		#for episode in episodelist['records']:
