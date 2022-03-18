@@ -21,7 +21,7 @@ from newznab import wrapper
 from sabnzbd import sabnzbd
 
 __version__ = "0.3.2"
-COMPONENT_NAME = "Sickchill"
+COMPONENT_NAME = "Sonarr"
 COMPONENT_AUTHOR = "psyciknz"
 
 TIMEOUT = 10
@@ -229,7 +229,7 @@ if __name__ == '__main__':
 							_LOGGER.debug("Adding link to sabnzbd with nzb name of %s" % nzbname)
 							sabnzbd.addnzb(resultlink,nzbname)
 							_LOGGER.debug("Setting status as snatched")
-							sc.set_episode_status(showid,season,ep_number,"snatched")
+							#sc.set_episode_status(showid,season,ep_number,"snatched")
 	
 						else:
 							_LOGGER.info("Nothing found to download")
@@ -237,7 +237,16 @@ if __name__ == '__main__':
 					else:
 						_LOGGER.info("No NZB Results found")
 				else:
-					_LOGGER.debug("Non Wanted Episode Found as upcoming, setting as skipped '%s' - '%s'" % (showname,full_ep_name))
+					_LOGGER.debug("Non Wanted Episode Found as upcoming, setting as skipped '%s' - '%s'" % (showname,full_ep_name))                                # Get sonarr episode
+					request_uri ='http://'+self.sonarr_address+'/api/episode/'+str(sonarr_epid)+'?apikey='+self.sonarr_apikey
+					sonarr_episode_json = requests.get(request_uri).json()
+
+					if self.sonarr_unmonitor:
+						sonarr_episode_json["monitored"] = False
+
+						r = requests.put(request_uri, json=sonarr_episode_json)
+						if r.status_code != 200 and r.status_code != 202:
+							print("   Error: "+str(r.json()["message"]))
 					#sc.set_episode_status(showid,season,ep_number,"skipped")
 			#if showid != episode['seriesId']:
 		#for episode in episodelist['records']:
