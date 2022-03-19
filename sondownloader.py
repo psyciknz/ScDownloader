@@ -237,7 +237,7 @@ if __name__ == '__main__':
 						if resultlink is not None and resultlink != '':
 							_LOGGER.debug("")
 							_LOGGER.debug("===================================================================================")
-							_LOGGER.debug("Entry to download: entry: %s Quality: %s: link: %s", title, quality,link)
+							_LOGGER.debug("Entry to download: entry: %s Quality: %s: link: %s", resulttitle, quality,link)
 							nzbname = "%s.S%sE%s.%s.%s" %(showname.replace(' ','.'),season,ep_number,full_ep_name,lastquality)
 							_LOGGER.debug("Adding link to sabnzbd with nzb name of \"%s\"" % nzbname)
 							sabnzbd.addnzb(resultlink,nzbname)
