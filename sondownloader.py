@@ -64,9 +64,71 @@ def get_show_by_tvdbid(host,headers,tvdbid):
 	return shows,returnitem
 #def get_show_by_tvdbid(host,headers,tvdbid):
 
+def get_config(filename):
+	cp = ConfigParser(allow_no_value=True)
+	_LOGGER.info("Loading config")
+	if filename is None:
+		filename = {"config.ini","conf/config.ini"}
+	dataset = cp.read(filename)
+	config = {}
+	try:
+		if len(dataset) != 1:
+			raise ValueError( "Failed to open/find all files")
+
+		config["sonarr_host"] = cp.get("Sonarr","host")
+		config["sonarr_api_key"] = cp.get("Sonarr","api_key")
+		config['sonarr_upcoming'] = cp.get("Sonarr","upcoming",fallback="missed|today|soon")
+		config["newznzb_host"] = cp.get("NewzNZB","host")
+		config["newznzb_api"] = cp.get("NewzNZB","api_key")
+		config["newznzb_cat"] = cp.get("NewzNZB","cat",fallback="5000")
+		config["sab_api_key"] = cp.get("SabNZBd","api_key")
+		config["sab_host"] = cp.get("SabNZBd","host")
+		config["sab_category"] = cp.get("SabNZBd","category")
+
+		show  = cp.get("Shows","show").split("|")
+		
+		config["sports_show_name"] = show[0]
+		if len(show) >1:
+			config["sports_show_id"] = int(show[1] )#cp.get("Shows","show_id",fallback=None)
+		show_cp = cp.items(show[0])
+		config["episodetypes"] = cp.get(show[0],'episodetypes',fallback='').split("|")
+		config[show[0]] = cp._sections[show[0]]
+
+		shows = get_config_shows(cp)
+		config['shows'] = shows
+	except Exception as ex:
+		_LOGGER.error("Error starting:" + str(ex))
+		sys.exit(0)
+	return config
+#def get_config(filename):
+
+def get_config_shows(cp):
+	"""
+	Gets the shows from config resturns as a dictionary
+	"""
+	showsconfig  = cp.items("Shows")
+	for key, value in showsconfig:
+		show = str(value).split("|")
+	
+	shows = {}
+	
+	showdata = {}
+	# populate the show name and id if there.
+	showdata['name'] = show[0]
+	if len(show) >1:
+		showdata['id'] = int(show[1])
+
+	show_cp = cp.items(show[0])
+	showdata["episodetypes"] = cp.get(show[0],'episodetypes',fallback='').split("|")
+	showdata["config"] = cp._sections[show[0]]
+
+	#set shows dictionary to show data, keyed by showname
+	shows[show[0]] = showdata
+
+	return shows
 
 if __name__ == '__main__':
-	cp = ConfigParser(allow_no_value=True)
+	""" cp = ConfigParser(allow_no_value=True)
 	_LOGGER.info("Loading config")
 	if len(sys.argv) > 1:
 		filename = sys.argv[1]
@@ -99,7 +161,11 @@ if __name__ == '__main__':
 
 	except Exception as ex:
 		_LOGGER.error("Error starting:" + str(ex))
-		sys.exit(0)
+		sys.exit(0) """
+	if len(sys.argv) > 1:
+		config = get_config(sys.argv)
+	else:
+		config - get_config(None)
 
 	newznzb = wrapper(config["newznzb_host"],config["newznzb_api"],useSSL=True,useJson=True)
 	
