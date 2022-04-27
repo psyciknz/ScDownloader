@@ -54,7 +54,7 @@ def get_show_by_tvdbid(host,headers,tvdbid):
 	print(url)
 	shows = {}
 	res = requests.get(url,headers=headers)
-	#print(res.json())
+	print(res.json())
 	for item in res.json():
 		print("Found '{}' with tvbdbid of '{}'.  I want '{}'".format(item['title'],item['tvdbId'],tvdbid))
 		shows[item['id']] = item
@@ -69,7 +69,7 @@ def get_config(filename):
 	_LOGGER.info("Loading config")
 	if filename is None:
 		filename = {"config.ini","conf/config.ini"}
-	dataset = cp.read(filename)
+	dataset = cp.read(filename[1])
 	config = {}
 	try:
 		if len(dataset) != 1:
@@ -128,40 +128,7 @@ def get_config_shows(cp):
 	return shows
 
 if __name__ == '__main__':
-	""" cp = ConfigParser(allow_no_value=True)
-	_LOGGER.info("Loading config")
-	if len(sys.argv) > 1:
-		filename = sys.argv[1]
-	else:
-		filename = {"config.ini","conf/config.ini"}
-	dataset = cp.read(filename)
-	config = {}
-	try:
-		if len(dataset) != 1:
-			raise ValueError( "Failed to open/find all files")
-
-		config["sonarr_host"] = cp.get("Sonarr","host")
-		config["sonarr_api_key"] = cp.get("Sonarr","api_key")
-		config['sonarr_upcoming'] = cp.get("Sonarr","upcoming",fallback="missed|today|soon")
-		config["newznzb_host"] = cp.get("NewzNZB","host")
-		config["newznzb_api"] = cp.get("NewzNZB","api_key")
-		config["newznzb_cat"] = cp.get("NewzNZB","cat",fallback="5000")
-		config["sab_api_key"] = cp.get("SabNZBd","api_key")
-		config["sab_host"] = cp.get("SabNZBd","host")
-		config["sab_category"] = cp.get("SabNZBd","category")
-
-		show  = cp.get("Shows","show").split("|")
-		
-		config["sports_show_name"] = show[0]
-		if len(show) >1:
-			config["sports_show_id"] = int(show[1] )#cp.get("Shows","show_id",fallback=None)
-		show_cp = cp.items(show[0])
-		config["episodetypes"] = cp.get(show[0],'episodetypes',fallback='').split("|")
-		config[show[0]] = cp._sections[show[0]]
-
-	except Exception as ex:
-		_LOGGER.error("Error starting:" + str(ex))
-		sys.exit(0) """
+	
 	if len(sys.argv) > 1:
 		config = get_config(sys.argv)
 	else:
