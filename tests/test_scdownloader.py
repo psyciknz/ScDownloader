@@ -43,6 +43,8 @@ def test_get_config_shows(tmpdir):
     cp = ConfigParser(allow_no_value=True)
     cp.add_section("Shows")
     cp.set("Shows", "Formula 1|387219")
+    cp.set("Shows", "v8 supercars|387220")
+
 
     cp.add_section("formula 1")
     cp.set("formula 1","EpisodeTypes=race|qualifying|day")
@@ -50,6 +52,9 @@ def test_get_config_shows(tmpdir):
     cp.set("formula 1","Great Britain=British")
     cp.set("formula 1","Italy=Italian")
 
+    cp.add_section("v8 supercars")
+    cp.set("v8 supercars","EpisodeTypes=race|qualifying|day")
+    
     cp.write(open(os.path.join(tmpdir,"config.ini"),"w"))
     cp.read(open(os.path.join(tmpdir,"config.ini"),"r"))
 
@@ -57,5 +62,6 @@ def test_get_config_shows(tmpdir):
 
     assert(config is not None)
     assert(config['formula 1'] is not None)
+    assert(config['v8 supercars'] is not None)
         
 
