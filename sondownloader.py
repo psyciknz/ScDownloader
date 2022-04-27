@@ -106,24 +106,24 @@ def get_config_shows(cp):
 	"""
 	Gets the shows from config resturns as a dictionary
 	"""
-	showsconfig  = cp.items("Shows")
-	for key, value in showsconfig:
-		show = str(value).split("|")
-	
 	shows = {}
-	
-	showdata = {}
-	# populate the show name and id if there.
-	showdata['name'] = show[0]
-	if len(show) >1:
-		showdata['id'] = int(show[1])
 
-	show_cp = cp.items(show[0])
-	showdata["episodetypes"] = cp.get(show[0],'episodetypes',fallback='').split("|")
-	showdata["config"] = cp._sections[show[0]]
+	showsconfig  = dict(cp['Shows'])
+	for value in showsconfig:
+		show = str(value).split("|")
+		
+		showdata = {}
+		# populate the show name and id if there.
+		showdata['name'] = show[0]
+		if len(show) >1:
+			showdata['id'] = int(show[1])
 
-	#set shows dictionary to show data, keyed by showname
-	shows[show[0]] = showdata
+		show_cp = cp.items(show[0])
+		showdata["episodetypes"] = cp.get(show[0],'episodetypes',fallback='').split("|")
+		showdata["config"] = cp._sections[show[0]]
+
+		#set shows dictionary to show data, keyed by showname
+		shows[show[0]] = showdata
 
 	return shows
 
