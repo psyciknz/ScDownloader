@@ -44,11 +44,18 @@ def test_get_config_shows(tmpdir):
     cp.add_section("Shows")
     cp.set("Shows", "Formula 1|387219")
 
+    cp.add_section("formula 1")
+    cp.set("formula 1","EpisodeTypes=race|qualifying|day")
+    cp.set("formula 1","Hungary=Hungarian")
+    cp.set("formula 1","Great Britain=British")
+    cp.set("formula 1","Italy=Italian")
+
     cp.write(open(os.path.join(tmpdir,"config.ini"),"w"))
     cp.read(open(os.path.join(tmpdir,"config.ini"),"r"))
 
     config = sondownloader.get_config_shows(cp)
-    
 
+    assert(config is not None)
+    assert(config['formula 1'] is not None)
         
 
