@@ -25,6 +25,8 @@ __version__ = "0.3.2"
 COMPONENT_NAME = "Sonarr"
 COMPONENT_AUTHOR = "psyciknz"
 
+SONARR_HOST = 'host'
+
 TIMEOUT = 10
 INTERVAL = timedelta(minutes=10)
 ATTRIBUTES = ['shows_total', 'shows_active', 'ep_downloaded', 'ep_total', 'ep_snatched']
@@ -36,6 +38,8 @@ ATTRIBUTES = ['shows_total', 'shows_active', 'ep_downloaded', 'ep_total', 'ep_sn
 # splits to two groups, the ep_name - ie place and the type - which is checked against the
 # episodetypes config list.
 EPISODENAMEREGEX = r"(^.+).\((.+)\)"
+
+sonarshows = {}
 
 _LOGGER = logging.getLogger(__name__)
 _LOGGER.setLevel(logging.DEBUG)
@@ -50,18 +54,26 @@ ch.setFormatter(formatter)
 _LOGGER.addHandler(ch)
 
 def get_show_by_tvdbid(host,headers,tvdbid):
-	url = "{}/api/v3/series/".format(host)
-	print(url)
-	shows = {}
-	res = requests.get(url,headers=headers)
-	print(res.json())
-	for item in res.json():
-		print("Found '{}' with tvbdbid of '{}'.  I want '{}'".format(item['title'],item['tvdbId'],tvdbid))
-		shows[item['id']] = item
-		if item['tvdbId'] == tvdbid:
-			returnitem = item
+	"""
+	Gets a specific sonar show from sonar.
+	"""
+	if len(sonarshows) == 0:
+		url = "{}/api/v3/series/".format(host)
+		print(url)
+		
+		res = requests.get(url,headers=headers)
+		print(res.json())
+		for item in res.json():
+			print("Found '{}' with tvbdbid of '{}'.  I want '{}'".format(item['title'],item['tvdbId'],tvdbid))
+			sonarshows[item['id']] = item
+			if tvdbid is not None and item['tvdbId'] == tvdbid:
+				returnitem = item
+	else:
+		for show in sonarshows.values():
+			if tvdbid is not None and show['tvdbId'] == tvdbid:
+				return show
 	#for item in res.json():
-	return shows,returnitem
+	return returnitem
 #def get_show_by_tvdbid(host,headers,tvdbid):
 
 def get_config(filename):
@@ -75,7 +87,7 @@ def get_config(filename):
 		if len(dataset) != 1:
 			raise ValueError( "Failed to open/find all files")
 
-		config["sonarr_host"] = cp.get("Sonarr","host")
+		config[SONARR_HOST] = cp.get("Sonarr","host")
 		config["sonarr_api_key"] = cp.get("Sonarr","api_key")
 		config['sonarr_upcoming'] = cp.get("Sonarr","upcoming",fallback="missed|today|soon")
 		config["newznzb_host"] = cp.get("NewzNZB","host")
@@ -84,15 +96,6 @@ def get_config(filename):
 		config["sab_api_key"] = cp.get("SabNZBd","api_key")
 		config["sab_host"] = cp.get("SabNZBd","host")
 		config["sab_category"] = cp.get("SabNZBd","category")
-
-		show  = cp.get("Shows","show").split("|")
-		
-		config["sports_show_name"] = show[0]
-		if len(show) >1:
-			config["sports_show_id"] = int(show[1] )#cp.get("Shows","show_id",fallback=None)
-		show_cp = cp.items(show[0])
-		config["episodetypes"] = cp.get(show[0],'episodetypes',fallback='').split("|")
-		config[show[0]] = cp._sections[show[0]]
 
 		shows = get_config_shows(cp)
 		config['shows'] = shows
@@ -116,8 +119,8 @@ def get_config_shows(cp):
 		# populate the show name and id if there.
 		showdata['name'] = show[0]
 		if len(show) >1:
-			showdata['id'] = int(show[1])
-
+			showdata['tvdbid'] = int(show[1])
+	
 		show_cp = cp.items(show[0])
 		showdata["episodetypes"] = cp.get(show[0],'episodetypes',fallback='').split("|")
 		showdata["config"] = cp._sections[show[0]]
@@ -138,8 +141,11 @@ def get_upcoming_episodes(config, headers):
 
 	# Get the shows from the config object.
 	shows = config['shows']
+	showsbyid = {}
+	for show in shows:
+		showsbyid[shows[show]['seriesid']] = shows[show]['name']
 
-	url = "{}/api/v3/wanted/missing?sortKey=airDateUtc".format(config["sonarr_host"])
+	url = "{}/api/v3/wanted/missing?sortKey=airDateUtc".format(config[SONARR_HOST])
 	print (url)
 	res = requests.get(url, headers=headers)
 	#print (res.json())
@@ -147,6 +153,14 @@ def get_upcoming_episodes(config, headers):
 	if episodelist is not None and episodelist['totalRecords'] > 0:
 		#print ("Has results")
 		for episode in episodelist['records']:
+			if episode['seriesId'] in showsbyid:
+				#TODO set these values into the shows dictionary for searching
+				full_ep_name = episode['title'] # Sakhir (Practice 2)
+				episodeshow = episode['seriesId']
+				season = episode['seasonNumber']
+				ep_number = episode['episodeNumber']
+				epid = episode['id']
+
 			if showid != episode['seriesId']:
 				_LOGGER.debug("Found upcoming episode  \"{}\" for series \"{}\", but this is not our series".format(episode['title'],
 					shows[episode['seriesId']]['title']))
@@ -185,27 +199,21 @@ if __name__ == '__main__':
             'X-Api-Key': config["sonarr_api_key"]
         }
 
-	#all the shows from teh config that the user wants to track
+	#all the shows from the config that the user wants to track
 	shows = config['shows']
-	#sc.get_shows()
-	if  'sports_show_id' in config:
-		_LOGGER.debug("Already have a show ID, no need to go find it.")
-		showtvdbid = config['sports_show_id']
 
-		#return all thew shows to shows, and the one we want to show.
-		shows,show = get_show_by_tvdbid(config["sonarr_host"],headers,showtvdbid)
-	else:
-		_LOGGER.error("Cant run with out a show id.")
-		print ("Cant run with out a show id.")
-		sys.exit(1)
+	for show in shows:
+		sonarshow = get_show_by_tvdbid(config[SONARR_HOST], headers, shows[show]['tvdbid'])
+		shows[show]['seriesid'] = sonarshow['id']
 
-	showname = show['title']
-	showid = show['id']
 	#hold newznzbresults here so we don't have to make multiple api calls
 	newznzbresults = []
 
 	#season = sc.get_show(showid,'2020')
 	#Sonarr get upcoming
+	episodelist = get_upcoming_episodes(config, headers)
+
+
 	#curl -v -H "x-requested-with: XMLHttpRequest" -H "x-api-key: xxxxxxxxxxxxxxxx" <baseurl>/api/v3/wanted/missing?sortKey=airDateUtc
 	url = "{}/api/v3/wanted/missing?sortKey=airDateUtc".format(config["sonarr_host"])
 	print (url)

@@ -7,7 +7,9 @@ import sondownloader
 
 @mock.patch('requests.get')
 def test_get_show_by_tvdbid(mock_get):
-    
+    """
+    Tests getting shows from Sonarr, then calls again to get a new show, shouldn't connect to sonnar the 2nd time
+    """
     host = 'https://fake-sonarr.com'
     tvdbid = 387219
     headers = {
@@ -34,10 +36,16 @@ def test_get_show_by_tvdbid(mock_get):
     ]
             
     mock_get.return_value = my_mock_response     
-    shows,myshow = sondownloader.get_show_by_tvdbid(host,headers,tvdbid)
-    assert(shows is not None)
+    myshow = sondownloader.get_show_by_tvdbid(host,headers,tvdbid)
+    assert(sondownloader.sonarshows is not None)
     assert(myshow is not None)
-    assert(len(shows) == len(my_mock_response.json.return_value))
+    assert(len(sondownloader.sonarshows) == len(my_mock_response.json.return_value))
+    assert(myshow['title'] == 'Formula 1')
+    tvdbid = 359913
+    myshow = sondownloader.get_show_by_tvdbid(host,headers,tvdbid)
+    assert(myshow is not None)
+    assert(myshow['title'] == 'Formula 1: Drive to Survive')
+
 #def test_get_show_by_tvdbid(mock_get):
 
 
@@ -65,5 +73,5 @@ def test_get_config_shows(tmpdir):
     assert(config is not None)
     assert(config['formula 1'] is not None)
     assert(config['v8 supercars'] is not None)
-#def test_get_config_shows(tmpdir):        
+#def test_get_config_shows(tmpdir): 
 
