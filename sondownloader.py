@@ -124,8 +124,48 @@ def get_config_shows(cp):
 
 		#set shows dictionary to show data, keyed by showname
 		shows[show[0]] = showdata
+		#Storing shows by sonary show id as used for upcoming episodes.
+		#shows[showdata['id']] = showdata
 
 	return shows
+#def get_config_shows(cp):
+
+
+def get_upcoming_episodes(config, headers):
+	"""
+	Gets the upcoming episodes for the shows the user wants
+	"""
+
+	# Get the shows from the config object.
+	shows = config['shows']
+
+	url = "{}/api/v3/wanted/missing?sortKey=airDateUtc".format(config["sonarr_host"])
+	print (url)
+	res = requests.get(url, headers=headers)
+	#print (res.json())
+	episodelist = res.json()
+	if episodelist is not None and episodelist['totalRecords'] > 0:
+		#print ("Has results")
+		for episode in episodelist['records']:
+			if showid != episode['seriesId']:
+				_LOGGER.debug("Found upcoming episode  \"{}\" for series \"{}\", but this is not our series".format(episode['title'],
+					shows[episode['seriesId']]['title']))
+			else:
+				full_ep_name = episode['title'] # Sakhir (Practice 2)
+				episodeshow = episode['seriesId']
+				season = episode['seasonNumber']
+				ep_number = episode['episodeNumber']
+				epid = episode['id']
+
+				#result = [element for element in EPISODETYPES if element in episode['ep_name']]
+				result = [element for element in config["episodetypes"] if element.lower() in episode['title'].lower() ]
+				if len(result) > 0 :
+					result = 0
+				#if len(result) > 0 :
+			#if showid != episode['seriesId']:
+		#for episode in episodelist['records']:
+	#if episodelist is not None and episodelist['totalRecords'] > 0:
+#def get_upcoming_episodes(config):				
 
 if __name__ == '__main__':
 	
@@ -134,8 +174,10 @@ if __name__ == '__main__':
 	else:
 		config - get_config(None)
 
+	#create newznzb connection object
 	newznzb = wrapper(config["newznzb_host"],config["newznzb_api"],useSSL=True,useJson=True)
 	
+	# Create sabnzbd connection object
 	sabnzbd = sabnzbd(config,_LOGGER)
 
 	#Set Curl headers for sonarr
@@ -143,8 +185,8 @@ if __name__ == '__main__':
             'X-Api-Key': config["sonarr_api_key"]
         }
 
-	#all the shows
-	shows = {}
+	#all the shows from teh config that the user wants to track
+	shows = config['shows']
 	#sc.get_shows()
 	if  'sports_show_id' in config:
 		_LOGGER.debug("Already have a show ID, no need to go find it.")

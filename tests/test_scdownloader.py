@@ -38,6 +38,8 @@ def test_get_show_by_tvdbid(mock_get):
     assert(shows is not None)
     assert(myshow is not None)
     assert(len(shows) == len(my_mock_response.json.return_value))
+#def test_get_show_by_tvdbid(mock_get):
+
 
 def test_get_config_shows(tmpdir):
     cp = ConfigParser(allow_no_value=True)
@@ -63,5 +65,5 @@ def test_get_config_shows(tmpdir):
     assert(config is not None)
     assert(config['formula 1'] is not None)
     assert(config['v8 supercars'] is not None)
-        
+#def test_get_config_shows(tmpdir):        
 
