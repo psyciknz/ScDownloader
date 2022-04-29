@@ -75,3 +75,28 @@ def test_get_config_shows(tmpdir):
     assert(config['v8 supercars'] is not None)
 #def test_get_config_shows(tmpdir): 
 
+def test_process_upcoming_episode(tmpdir):
+    config = {}
+    episode = {
+        "seriesId": 4, 
+        "tvdbId": 9017877,
+        "episodeFileId": 0,
+        "seasonNumber": 2022,
+        "episodeNumber": 20, 
+        "title": "Great Britain (Qualifying)", 
+        "airDate": "2022-04-22", 
+        "airDateUtc": "2022-04-22T19:00:00Z",
+            "overview": "The Emilia Romagna Grand Prix (Italian: Gran Premio dell\"Emilia Romagna) is a Formula One motor racing event held at the Autodromo Internazionale Enzo e Dino Ferrari, often shortened to 'Imola' after the town where it is located. The Imola circuit previously hosted the Italian Grand Prix in 1980, and the San Marino Grand Prix from 1981 to 2006.", 
+            "id": 4571, 
+            "show": {
+                "tvdbid": 387219, 
+                "seriesid": 4, 
+                "EpisodeRegex": "(^.+).\\((.+)\\)", 
+                "EpisodeTypes": "race|qualifying|day", 
+                "name": "Formula 1",
+                "Hungary": "Hungarian", "Great Britain": "British", "Italy": "Italian", "Portugal": "Portuguese"
+                }
+    }
+    result = sondownloader.process_upcoming_episode(config, episode)
+     
+#def test_process_upcoming_episode(tmpdir):

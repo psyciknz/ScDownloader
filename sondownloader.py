@@ -217,11 +217,29 @@ def get_upcoming_episodes(config, headers) -> []:
 	return upcoming
 #def get_upcoming_episodes(config):				
 
-def process_upcoming_episodes(config,episodelist):
+def process_upcoming_episode(config,episode):
+	"""
+	This method has to take the upconing wanted show from Sonarr and translate it into a nzbsearch
+	It will use episode translates if needed Italy = Italian
+	and Practice 1 to practice 1 or One
+	"""
 	full_ep_name = episode['title'] # Sakhir (Practice 2)
+	currentshow = episode['show']
+	showname = currentshow['name']
 	_LOGGER.debug("")
 	_LOGGER.debug("*************   Found an episode type \"{}\" for \"{}\"".format(full_ep_name,showname))
-	match =  re.match(EPISODENAMEREGEX,full_ep_name)
+
+	#Formula1 = 'Emilia Romagna (Qualifying)'
+	#full_ep_name = "Great Britain (Qualifying)"
+	#ep_name = "Great Britain"
+	#ep_number = 77
+	#ep_type = "Qualifying"
+
+	#V8 = Melbourne 400 Race 4 Highlights
+	#nzb Supercars.Championship.2022.Race.9.Beaurepairs.Melbourne.400.Highlights.1080p.HDTV.H264-DARKSPORT
+
+
+	match =  re.match(currentshow['EpisodeRegex'],full_ep_name)
 	ep_name = match[1]
 	ep_type = match[2].replace(' ','.') # Practice 2
 	#ep_type = result[0].replace(' ','.') # Practice 2
@@ -238,12 +256,13 @@ def process_upcoming_episodes(config,episodelist):
 	
 	#look for translation
 	try:
-		translate = str(config[showname][ep_name.lower()] )
+		translate = str(currentshow[ep_name] )
 	except:
 		_LOGGER.debug('No translate entry for "%s" Found' % ep_name)
 		translate = ep_name.lower()
 
 	# quite specific for formula 1, as releases can be Practice 1 or Practice One
+	#unsure how to change this for other types.
 	ep_type_extended = ep_type.replace("1","(1|One|one|ONE)")
 	ep_type_extended = ep_type_extended.replace("2","(2|Two|two|TWO)")
 	ep_type_extended = ep_type_extended.replace("3","(3|Three|three|THREE)")
@@ -255,7 +274,7 @@ def process_upcoming_episodes(config,episodelist):
 		ep_type_extended = ep_type_extended.replace("Race","((?<!\.Sprint)\.[rR]ace)")
 		ep_type_extended = ep_type_extended.replace("Qualify","(\.[qQ]ualify)")
 
-
+	#TODO: test breaks here.
 	nzbregex = '%s.%s.(%s|%s).+%s.+(?P<quality>(720|1080)).+' %(showname,season,ep_name,translate,ep_type_extended)
 	_LOGGER.debug("Creating regex for matching NZB Results: %s" % nzbregex.replace(" ",".?"))
 	pattern = re.compile(nzbregex.replace(" ",".?"))
@@ -315,7 +334,7 @@ def process_upcoming_episodes(config,episodelist):
 	#if 'item' in results['channel'] and len(results['channel']['item']) > 0:
 	else:
 		_LOGGER.info("No NZB Results found")
-#def process_upcoming_episodes(config,episodelist):
+#def process_upcoming_episode(config,episode):
 
 
 if __name__ == '__main__':
@@ -356,15 +375,19 @@ if __name__ == '__main__':
 	#season = sc.get_show(showid,'2020')
 	#Sonarr get upcoming 
 	episodelist = get_upcoming_episodes(config, headers)
+	_LOGGER.debug("")
+	_LOGGER.debug("Have {} upcoming episodes to process and try and find downloads for".format(len(episodelist)))
 
 	#process all the episodes here.
 	#Will search NZB do all the filename translations and return an NZB url and what to call the NZB 
 	#in sabnznbd to get sonarr to process it.
-	resultlinks = process_upcoming_episodes(episodelist)
+	for episode in episodelist:
+		
+		result = process_upcoming_episode(config,episode)
+		_LOGGER.debug("")
 
-	_LOGGER.debug("")
-	_LOGGER.debug("Have {} upcoming episodes to process and try and find downloads for".format(len(episodelist)))
 
+	
 
 
 
