@@ -217,15 +217,37 @@ def get_upcoming_episodes(config, headers) -> []:
 	return upcoming
 #def get_upcoming_episodes(config):				
 
-def process_upcoming_episode(config,episode):
+def formula1_ep_type_replacements(ep_type) -> str:
+	# quite specific for formula 1, as releases can be Practice 1 or Practice One
+	#unsure how to change this for other types.
+	ep_type_extended = ep_type.replace("1","(1|One|one|ONE)")
+	ep_type_extended = ep_type_extended.replace("2","(2|Two|two|TWO)")
+	ep_type_extended = ep_type_extended.replace("3","(3|Three|three|THREE)")
+	#ep_type_extended = ep_type_extended.replace("Race","(\.[rR]ace)")
+	if 'Sprint' in ep_type_extended:
+		ep_type_extended = ep_type_extended.replace("Sprint","(\.[sS]print.+?)")
+		ep_type_extended = ep_type_extended.replace("Qualifying","")
+	else:
+		ep_type_extended = ep_type_extended.replace("Race","((?<!\.Sprint)\.[rR]ace)")
+		ep_type_extended = ep_type_extended.replace("Qualify","(\.[qQ]ualify)")
+
+	return ep_type_extended
+#def formula1_ep_type_replacements(ep_type) -> str:	
+
+def create_episode_search_strings(config,episode):
 	"""
 	This method has to take the upconing wanted show from Sonarr and translate it into a nzbsearch
 	It will use episode translates if needed Italy = Italian
 	and Practice 1 to practice 1 or One
+
 	"""
 	full_ep_name = episode['title'] # Sakhir (Practice 2)
 	currentshow = episode['show']
 	showname = currentshow['name']
+	episodeshow = episode['seriesId']
+	season = episode['seasonNumber']
+	ep_number = episode['episodeNumber']
+	epid = episode['id']
 	_LOGGER.debug("")
 	_LOGGER.debug("*************   Found an episode type \"{}\" for \"{}\"".format(full_ep_name,showname))
 
@@ -261,32 +283,45 @@ def process_upcoming_episode(config,episode):
 		_LOGGER.debug('No translate entry for "%s" Found' % ep_name)
 		translate = ep_name.lower()
 
-	# quite specific for formula 1, as releases can be Practice 1 or Practice One
-	#unsure how to change this for other types.
-	ep_type_extended = ep_type.replace("1","(1|One|one|ONE)")
-	ep_type_extended = ep_type_extended.replace("2","(2|Two|two|TWO)")
-	ep_type_extended = ep_type_extended.replace("3","(3|Three|three|THREE)")
-	#ep_type_extended = ep_type_extended.replace("Race","(\.[rR]ace)")
-	if 'Sprint' in ep_type_extended:
-		ep_type_extended = ep_type_extended.replace("Sprint","(\.[sS]print.+?)")
-		ep_type_extended = ep_type_extended.replace("Qualifying","")
+	ep_type_extended = ""
+	if showname.lower() == "formula 1":
+		ep_type_extended = formula1_ep_type_replacements(ep_type)
+
+	if "NameReplacement" in currentshow:
+		searchshowname = showname.replace(showname,currentshow["NameReplacement"])
+		_LOGGER.debug("Show name has a replacement value replacing '{}' with '{}'".format(showname,searchshowname))
 	else:
-		ep_type_extended = ep_type_extended.replace("Race","((?<!\.Sprint)\.[rR]ace)")
-		ep_type_extended = ep_type_extended.replace("Qualify","(\.[qQ]ualify)")
+		searchshowname = showname
 
 	#TODO: test breaks here.
-	nzbregex = '%s.%s.(%s|%s).+%s.+(?P<quality>(720|1080)).+' %(showname,season,ep_name,translate,ep_type_extended)
-	_LOGGER.debug("Creating regex for matching NZB Results: %s" % nzbregex.replace(" ",".?"))
-	pattern = re.compile(nzbregex.replace(" ",".?"))
+	nzbregex = r'%s.%s.+(%s|%s).+%s.+(?P<quality>(720|1080)).+' %(searchshowname,season,ep_name,translate,ep_type_extended)
+	episode['nzbregex'] = nzbregex.replace(" ",".?")
+	_LOGGER.debug("Creating regex for matching NZB Results: %s" % nzbregex)
+	pattern = re.compile(nzbregex)
 	
 	#perform NZBGeek Search
-	nzbsearch = '%s.%s' % (showname.replace(" ",""),season)
+	#nzbearch name doesn't go far enough for v8s, needs to be searchshowname,season,race number
+	nzbsearch = '%s.%s' % (searchshowname.replace(" ",""),season)
+	episode['nzbsearch'] = nzbsearch
+
+	return episode
+
 	
+#def process_upcoming_episode(config,episode):
+
+def nzb_search_episode(newznzb,episode,maxage=10):
+	newznzbresults = []
+	nzbsearch = episode['nzbsearch']
+	
+	#regex for searching results
+	pattern = re.compile(episode['nzbregex'])
+
+
 	if newznzbresults is None or len(newznzbresults) ==0 :
 		_LOGGER.debug('')
 		_LOGGER.debug('----------------------------------------------------------')
 		_LOGGER.debug('Performing NZB Search for "%s"' % nzbsearch)
-		newznzbresults = newznzb.search(q=nzbsearch,maxage=10,cat=config["newznzb_cat"])
+		newznzbresults = newznzb.search(q=nzbsearch,maxage=maxage,cat=config["newznzb_cat"])
 	else:
 		_LOGGER.debug('Already performed an NZB Search for "%s"' % nzbsearch)
 	#(q=str(nzbsearch),maxage=10)
@@ -334,7 +369,6 @@ def process_upcoming_episode(config,episode):
 	#if 'item' in results['channel'] and len(results['channel']['item']) > 0:
 	else:
 		_LOGGER.info("No NZB Results found")
-#def process_upcoming_episode(config,episode):
 
 
 if __name__ == '__main__':
@@ -383,12 +417,9 @@ if __name__ == '__main__':
 	#in sabnznbd to get sonarr to process it.
 	for episode in episodelist:
 		
-		result = process_upcoming_episode(config,episode)
+		result = create_episode_search_strings(config, episode)
 		_LOGGER.debug("")
-
-
-	
-
+		nzb_search_episode(newznzb,result,20)
 
 
 	#curl -v -H "x-requested-with: XMLHttpRequest" -H "x-api-key: xxxxxxxxxxxxxxxx" <baseurl>/api/v3/wanted/missing?sortKey=airDateUtc
